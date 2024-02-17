@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/krishnapramodaradhi/xpressbuy-api/internal/entity"
+	"github.com/krishnapramodaradhi/xpressbuy-api/internal/util"
 	"github.com/labstack/echo/v4"
 )
 
@@ -36,7 +37,12 @@ func (h *AuthHandler) Register(c echo.Context) error {
 		return err
 	}
 	c.Logger().Info(result.LastInsertId())
-	return c.String(http.StatusOK, "Success")
+
+	token, err := util.FetchToken(u.Id)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, map[string]string{"token": token})
 }
 
 func (h *AuthHandler) Login(c echo.Context) error {
@@ -46,8 +52,8 @@ func (h *AuthHandler) Login(c echo.Context) error {
 	}
 
 	var user entity.User
-	row := h.db.QueryRow("SELECT password FROM users where email = $1", u.Email)
-	if err := row.Scan(&user.Password); err != nil {
+	row := h.db.QueryRow("SELECT id, password FROM users where email = $1", u.Email)
+	if err := row.Scan(&user.Id, &user.Password); err != nil {
 		if err == sql.ErrNoRows {
 			return errors.New("Auth Failed")
 		}
@@ -58,5 +64,9 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		return err
 	}
 
-	return c.String(http.StatusOK, "Success")
+	token, err := util.FetchToken(user.Id)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, map[string]string{"token": token})
 }

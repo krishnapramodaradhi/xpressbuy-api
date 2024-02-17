@@ -45,6 +45,8 @@ func (s *Server) Run() {
 	r.POST("/signup", ah.Register)
 	r.POST("/signin", ah.Login)
 
+	// Protected Route Group
+
 	app.Logger.Fatal(app.Start(s.listenAddr))
 }
 
