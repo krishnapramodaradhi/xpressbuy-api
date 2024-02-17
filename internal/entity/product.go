@@ -1,7 +1,7 @@
 package entity
 
 type Product struct {
-	Id               string   `json:"id"`
+	Id               string   `json:"id" param:"id"`
 	Title            string   `json:"title"`
 	ShortDescription string   `json:"shortDescription"`
 	Description      string   `json:"description"`
