@@ -2,7 +2,6 @@ package util
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"os"
 	"time"
@@ -35,8 +34,7 @@ func ValidateToken(tokenString string) (string, error) {
 	switch {
 	case token.Valid:
 		if claims, ok := token.Claims.(*CustomClaims); ok {
-			fmt.Printf("%+v", claims)
-			return "", nil
+			return claims.Payload, nil
 		}
 		return "", errors.New("unknown claim type")
 	case errors.Is(err, jwt.ErrTokenMalformed):

@@ -13,10 +13,11 @@ func ValidateToken(next echo.HandlerFunc) echo.HandlerFunc {
 		if len(token) == 0 {
 			return echo.NewHTTPError(http.StatusUnauthorized, "Auth Token not found")
 		}
-		_, err := util.ValidateToken(token[0])
+		payload, err := util.ValidateToken(token[0])
 		if err != nil {
 			return echo.NewHTTPError(http.StatusUnauthorized, err.Error())
 		}
+		c.Set("userId", payload)
 		return next(c)
 	}
 }
