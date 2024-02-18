@@ -5,12 +5,17 @@ import (
 
 	"github.com/krishnapramodaradhi/xpressbuy-api/internal/entity"
 	"github.com/krishnapramodaradhi/xpressbuy-api/internal/handler"
+	m "github.com/krishnapramodaradhi/xpressbuy-api/internal/middleware"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
 type Server struct {
 	listenAddr string
+}
+
+func NewServer(listenAddr string) *Server {
+	return &Server{listenAddr: listenAddr}
 }
 
 func (s *Server) Run() {
@@ -46,10 +51,9 @@ func (s *Server) Run() {
 	r.POST("/signin", ah.Login)
 
 	// Protected Route Group
+	p := app.Group("/api/v1/cart")
+	ch := handler.NewCartHandler(db.db)
+	p.POST("/add", ch.AddItemToCart, m.ValidateToken)
 
 	app.Logger.Fatal(app.Start(s.listenAddr))
-}
-
-func NewServer(listenAddr string) *Server {
-	return &Server{listenAddr: listenAddr}
 }

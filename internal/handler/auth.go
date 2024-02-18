@@ -38,7 +38,7 @@ func (h *AuthHandler) Register(c echo.Context) error {
 	}
 	c.Logger().Info(result.LastInsertId())
 
-	token, err := util.FetchToken(u.Id)
+	token, err := util.GenerateToken(u.Id)
 	if err != nil {
 		return err
 	}
@@ -64,7 +64,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 		return err
 	}
 
-	token, err := util.FetchToken(user.Id)
+	token, err := util.GenerateToken(user.Id)
 	if err != nil {
 		return err
 	}
