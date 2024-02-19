@@ -17,6 +17,26 @@ func NewCartHandler(db *sql.DB) *CartHandler {
 	return &CartHandler{db: db}
 }
 
+func (h *CartHandler) FetchCart(c echo.Context) error {
+	userId := c.Get("userId")
+	cartItems := []entity.CartItem{}
+	totalPrice := 0.0
+	rows, err := h.db.Query("SELECT c.id, c.quantity, c.total_price, p.id, p.title, p.image_url FROM cart_items c, products p WHERE c.product_id = p.id AND user_id = $1", userId)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var item entity.CartItem
+		if err = rows.Scan(&item.Id, &item.Quantity, &item.TotalPrice, &item.Product.Id, &item.Product.Title, &item.Product.ImageUrl); err != nil {
+			return err
+		}
+		cartItems = append(cartItems, item)
+		totalPrice += item.TotalPrice
+	}
+	return c.JSON(http.StatusOK, map[string]any{"items": cartItems, "totalPrice": totalPrice})
+}
+
 func (h *CartHandler) AddItemToCart(c echo.Context) error {
 	var req entity.CartItemRequest
 	if err := c.Bind(&req); err != nil {
@@ -49,7 +69,7 @@ func (h *CartHandler) RemoveFromCart(c echo.Context) error {
 	if _, err := h.db.Exec("DELETE FROM cart_items where id = $1", cartId); err != nil {
 		return err
 	}
-	return c.JSON(http.StatusOK, map[string]string{"id": cartId})
+	return c.JSON(http.StatusOK, map[string]string{"message": cartId})
 }
 
 func (h *CartHandler) ClearCart(c echo.Context) error {

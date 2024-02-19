@@ -55,6 +55,7 @@ func (s *Server) Run() {
 	p := app.Group("/api/v1/cart")
 	p.Use(m.ValidateToken)
 	ch := handler.NewCartHandler(db.db)
+	p.GET("", ch.FetchCart)
 	p.POST("/modify", ch.AddItemToCart)
 	p.DELETE("/remove/:id", ch.RemoveFromCart)
 	p.DELETE("/remove", ch.ClearCart)
