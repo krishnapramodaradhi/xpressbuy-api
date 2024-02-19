@@ -51,9 +51,13 @@ func (s *Server) Run() {
 	r.POST("/signin", ah.Login)
 
 	// Protected Route Group
+	// Cart Routes
 	p := app.Group("/api/v1/cart")
+	p.Use(m.ValidateToken)
 	ch := handler.NewCartHandler(db.db)
-	p.POST("/add", ch.AddItemToCart, m.ValidateToken)
+	p.POST("/modify", ch.AddItemToCart)
+	p.DELETE("/remove/:id", ch.RemoveFromCart)
+	p.DELETE("/remove", ch.ClearCart)
 
 	app.Logger.Fatal(app.Start(s.listenAddr))
 }
