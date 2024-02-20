@@ -1,6 +1,12 @@
 package entity
 
-import "golang.org/x/crypto/bcrypt"
+import (
+	"errors"
+	"net/http"
+
+	customerror "github.com/krishnapramodaradhi/xpressbuy-api/internal/util/customError"
+	"golang.org/x/crypto/bcrypt"
+)
 
 type User struct {
 	Id        string `json:"id"`
@@ -21,7 +27,11 @@ func (u *User) HashPassword(password string) (string, error) {
 func (u *User) ComparePassword(password string) error {
 	err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password))
 	if err != nil {
-		return err
+		switch {
+		case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
+			return customerror.New(http.StatusBadRequest, "Auth Failed")
+		}
+		return customerror.New(http.StatusInternalServerError, err.Error())
 	}
 	return nil
 }

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -27,7 +28,7 @@ func GenerateToken(payload string) (string, error) {
 }
 
 func ValidateToken(tokenString string) (string, error) {
-	token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(t *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(strings.Split(tokenString, " ")[1], &CustomClaims{}, func(t *jwt.Token) (interface{}, error) {
 		return []byte(os.Getenv("SIGNING_KEY")), nil
 	})
 

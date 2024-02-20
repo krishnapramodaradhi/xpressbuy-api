@@ -6,8 +6,10 @@ import (
 	"github.com/krishnapramodaradhi/xpressbuy-api/internal/entity"
 	"github.com/krishnapramodaradhi/xpressbuy-api/internal/handler"
 	m "github.com/krishnapramodaradhi/xpressbuy-api/internal/middleware"
+	customerror "github.com/krishnapramodaradhi/xpressbuy-api/internal/util/customError"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/labstack/gommon/log"
 )
 
 type Server struct {
@@ -22,6 +24,19 @@ func (s *Server) Run() {
 	app := echo.New()
 
 	app.HideBanner = true
+	app.Logger.SetLevel(log.Lvl(1))
+	app.HTTPErrorHandler = func(err error, c echo.Context) {
+		c.Logger().Error(err)
+		e, ok := err.(*customerror.CustomError)
+		if !ok {
+			c.Echo().DefaultHTTPErrorHandler(err, c)
+			return
+		}
+		if e.StatusCode == 500 {
+			e.Message = customerror.INTERNAL_SERVER_ERROR
+		}
+		c.JSON(e.StatusCode, e)
+	}
 
 	// middlewares
 	app.Use(middleware.Logger())

@@ -2,12 +2,13 @@ package handler
 
 import (
 	"database/sql"
-	"errors"
 	"net/http"
 
 	"github.com/google/uuid"
 	"github.com/krishnapramodaradhi/xpressbuy-api/internal/entity"
 	"github.com/krishnapramodaradhi/xpressbuy-api/internal/util"
+	"github.com/krishnapramodaradhi/xpressbuy-api/internal/util/constants"
+	customerror "github.com/krishnapramodaradhi/xpressbuy-api/internal/util/customError"
 	"github.com/labstack/echo/v4"
 )
 
@@ -22,25 +23,25 @@ func NewAuthHandler(db *sql.DB) *AuthHandler {
 func (h *AuthHandler) Register(c echo.Context) error {
 	u := new(entity.User)
 	if err := c.Bind(u); err != nil {
-		return err
+		return customerror.New(http.StatusInternalServerError, err.Error())
 	}
 
 	hashedPassword, err := u.HashPassword(u.Password)
 	if err != nil {
-		return err
+		return customerror.New(http.StatusInternalServerError, err.Error())
 	}
 
 	u.Id = uuid.NewString()
 	u.Password = hashedPassword
-	result, err := h.db.Exec("INSERT INTO users (id, first_name, last_name, email, password) values ($1, $2, $3, $4, $5)", u.Id, u.FirstName, u.LastName, u.Email, u.Password)
+	result, err := h.db.Exec(constants.CREATE_USER, u.Id, u.FirstName, u.LastName, u.Email, u.Password)
 	if err != nil {
-		return err
+		return customerror.New(http.StatusInternalServerError, err.Error())
 	}
 	c.Logger().Info(result.LastInsertId())
 
 	token, err := util.GenerateToken(u.Id)
 	if err != nil {
-		return err
+		return customerror.New(http.StatusInternalServerError, err.Error())
 	}
 	return c.JSON(http.StatusOK, map[string]string{"token": token})
 }
@@ -48,16 +49,15 @@ func (h *AuthHandler) Register(c echo.Context) error {
 func (h *AuthHandler) Login(c echo.Context) error {
 	u := new(entity.User)
 	if err := c.Bind(u); err != nil {
-		return err
+		return customerror.New(http.StatusInternalServerError, err.Error())
 	}
-
 	var user entity.User
-	row := h.db.QueryRow("SELECT id, password FROM users where email = $1", u.Email)
+	row := h.db.QueryRow(constants.FIND_USER_EMAIL, u.Email)
 	if err := row.Scan(&user.Id, &user.Password); err != nil {
 		if err == sql.ErrNoRows {
-			return errors.New("Auth Failed")
+			return customerror.New(http.StatusUnauthorized, "Auth Failed")
 		}
-		return err
+		return customerror.New(http.StatusInternalServerError, err.Error())
 	}
 	err := user.ComparePassword(u.Password)
 	if err != nil {
