@@ -1,5 +1,7 @@
 package customerror
 
+import "github.com/labstack/echo/v4"
+
 const INTERNAL_SERVER_ERROR string = "An Internal Server Error has occured"
 
 type CustomError struct {
@@ -14,6 +16,20 @@ func New(code int, message string) error {
 
 func (e *CustomError) Error() string {
 	return e.Message
+}
+
+func (e *CustomError) ErrorHandler(err error, c echo.Context) {
+	c.Logger().Error(err)
+	ce, ok := err.(*CustomError)
+	if !ok {
+		echoErr, _ := err.(*echo.HTTPError)
+		c.JSON(echoErr.Code, New(echoErr.Code, err.Error()))
+		return
+	}
+	if ce.StatusCode == 500 {
+		ce.Message = INTERNAL_SERVER_ERROR
+	}
+	c.JSON(ce.StatusCode, ce)
 }
 
 func getErrWithStatusCode(code int) string {

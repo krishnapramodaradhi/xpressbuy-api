@@ -21,25 +21,27 @@ func NewAuthHandler(db *sql.DB) *AuthHandler {
 }
 
 func (h *AuthHandler) Register(c echo.Context) error {
-	u := new(entity.User)
+	u := new(entity.UserRequest)
 	if err := c.Bind(u); err != nil {
 		return customerror.New(http.StatusInternalServerError, err.Error())
 	}
-
-	hashedPassword, err := u.HashPassword(u.Password)
+	if err := c.Validate(u); err != nil {
+		return customerror.New(http.StatusBadRequest, err.Error())
+	}
+	newUser := new(entity.User)
+	hashedPassword, err := newUser.HashPassword(u.Password)
 	if err != nil {
 		return customerror.New(http.StatusInternalServerError, err.Error())
 	}
 
-	u.Id = uuid.NewString()
-	u.Password = hashedPassword
-	result, err := h.db.Exec(constants.CREATE_USER, u.Id, u.FirstName, u.LastName, u.Email, u.Password)
+	newUser.Id = uuid.NewString()
+	newUser.Password = hashedPassword
+	_, err = h.db.Exec(constants.CREATE_USER, newUser.Id, newUser.FirstName, newUser.LastName, newUser.Email, newUser.Password)
 	if err != nil {
 		return customerror.New(http.StatusInternalServerError, err.Error())
 	}
-	c.Logger().Info(result.LastInsertId())
 
-	token, err := util.GenerateToken(u.Id)
+	token, err := util.GenerateToken(newUser.Id)
 	if err != nil {
 		return customerror.New(http.StatusInternalServerError, err.Error())
 	}

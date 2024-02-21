@@ -25,18 +25,8 @@ func (s *Server) Run() {
 
 	app.HideBanner = true
 	app.Logger.SetLevel(log.Lvl(1))
-	app.HTTPErrorHandler = func(err error, c echo.Context) {
-		c.Logger().Error(err)
-		e, ok := err.(*customerror.CustomError)
-		if !ok {
-			c.Echo().DefaultHTTPErrorHandler(err, c)
-			return
-		}
-		if e.StatusCode == 500 {
-			e.Message = customerror.INTERNAL_SERVER_ERROR
-		}
-		c.JSON(e.StatusCode, e)
-	}
+	app.Validator = m.New()
+	app.HTTPErrorHandler = new(customerror.CustomError).ErrorHandler
 
 	// middlewares
 	app.Use(middleware.Logger())
@@ -65,7 +55,7 @@ func (s *Server) Run() {
 	r.POST("/signup", ah.Register)
 	r.POST("/signin", ah.Login)
 
-	// Protected Route Group
+	// Protected Routes
 	// Cart Routes
 	p := app.Group("/api/v1/cart")
 	p.Use(m.ValidateToken)
