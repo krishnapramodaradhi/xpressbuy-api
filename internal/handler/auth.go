@@ -26,15 +26,15 @@ func (h *AuthHandler) Register(c echo.Context) error {
 		return customerror.New(http.StatusInternalServerError, err.Error())
 	}
 	if err := c.Validate(u); err != nil {
+		c.Logger().Error("An error occured with the request validation", err)
 		return customerror.New(http.StatusBadRequest, err.Error())
 	}
-	newUser := new(entity.User)
+	newUser := entity.NewUser(uuid.NewString(), u.FirstName, u.LastName, u.Email)
 	hashedPassword, err := newUser.HashPassword(u.Password)
 	if err != nil {
 		return customerror.New(http.StatusInternalServerError, err.Error())
 	}
 
-	newUser.Id = uuid.NewString()
 	newUser.Password = hashedPassword
 	_, err = h.db.Exec(constants.CREATE_USER, newUser.Id, newUser.FirstName, newUser.LastName, newUser.Email, newUser.Password)
 	if err != nil {
@@ -57,7 +57,7 @@ func (h *AuthHandler) Login(c echo.Context) error {
 	row := h.db.QueryRow(constants.FIND_USER_EMAIL, u.Email)
 	if err := row.Scan(&user.Id, &user.Password); err != nil {
 		if err == sql.ErrNoRows {
-			return customerror.New(http.StatusUnauthorized, "Auth Failed")
+			return customerror.New(http.StatusBadRequest, "Auth Failed")
 		}
 		return customerror.New(http.StatusInternalServerError, err.Error())
 	}
